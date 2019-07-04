@@ -18,6 +18,7 @@
 const int SOFT_POT_PIN = A14; // Pin connected to softpot wiper
 uint16_t lasttouched = 0;
 uint16_t currtouched = 0;
+int lastPosition = 0;
 
 Adafruit_MPR121 capa = Adafruit_MPR121();
 
@@ -34,13 +35,18 @@ void loop()
   int softPotADC = analogRead(SOFT_POT_PIN);
   // Map the 0-1023 value to 54-64
   int softPotPosition = map(softPotADC, 0, 1023, 54, 64);
+  currtouched = capa.touched();
 
   Serial.println(softPotPosition);
-  if (capa.touched() & (1 << 4)){
-    Serial.println("TOUCH");
+  if ((currtouched & _BV(4)) && !(lasttouched & _BV(4)) ){
+    Serial.println(softPotPosition + " on");
     usbMIDI.sendNoteOn(softPotPosition, NOTE_ON_VEL, MIDI_CHANNEL);
-    delay(50);
-    usbMIDI.sendNoteOff(softPotPosition, NOTE_OFF_VEL, MIDI_CHANNEL);
   }
-  delay(50);
+  if (!(currtouched & _BV(4)) && (lasttouched & _BV(4)) ){
+    usbMIDI.sendNoteOff(lastPosition, NOTE_OFF_VEL, MIDI_CHANNEL);
+    Serial.println(lastPosition + " off");
+  }
+
+  lastPosition = softPotPosition;
+  lasttouched = currtouched;
 }
