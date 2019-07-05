@@ -20,6 +20,8 @@ uint16_t lasttouched = 0;
 uint16_t currtouched = 0;
 int lastPosition = 0;
 int bendy = 0;
+double noteResists[8] = {0, 148, 293, 440, 587, 730, 880, 1020};
+const int bendDefault = 8192;
 
 Adafruit_MPR121 capa = Adafruit_MPR121();
 
@@ -34,20 +36,18 @@ void loop()
 {
   // Read in the soft pot's ADC value
   int softPotADC = analogRead(SOFT_POT_PIN);
-  // Map the 0-1023 value to 58-52
+  // Map the 0-1023 value to 58-50
   int softPotPosition = map(softPotADC, 0, 1023, 58, 50);
-  int i = 0;
-//  do{
-//    bendy = softPotADC / i; 
-//    i++; 
-//  }while(bendy != 0);
-//  Serial.print(bendy);
+
+  bendy = pitchBend(softPotADC);
+
   currtouched = capa.touched();
   if ((currtouched & _BV(4)) && !(lasttouched & _BV(4)) ){
     Serial.print(softPotPosition);
-    Serial.println(" on");
+    Serial.print(" on, bend: ");
+    Serial.println(bendy);
     usbMIDI.sendNoteOn(softPotPosition, NOTE_ON_VEL, MIDI_CHANNEL);
-//    usbMIDI.sendPitchBend(bendy, MIDI_CHANNEL);
+    usbMIDI.sendPitchBend(bendy, MIDI_CHANNEL);
   }
   if (!(currtouched & _BV(4)) && (lasttouched & _BV(4)) ){
     usbMIDI.sendNoteOff(lastPosition, NOTE_OFF_VEL, MIDI_CHANNEL);
@@ -58,3 +58,25 @@ void loop()
   lastPosition = softPotPosition;
   lasttouched = currtouched;
 }
+
+int pitchBend(int softPotADC){
+  int bend = 8192;
+  int mod = 10000;
+  if(softPotADC < noteResists[1]){
+    bend = (((softPotADC) / noteResists[1]) * mod) + bendDefault;
+  }else if(softPotADC < noteResists[2]){
+    bend = (((softPotADC) / noteResists[2]) * mod) + bendDefault;
+  }else if(softPotADC < noteResists[3]){
+    bend = (((softPotADC) / noteResists[3]) * mod) + bendDefault;
+  }else if(softPotADC < noteResists[4]){
+    bend = (((softPotADC) / noteResists[4]) * mod) + bendDefault;
+  }else if(softPotADC < noteResists[5]){
+    bend = (((softPotADC) / noteResists[5]) * mod) + bendDefault;
+  }else if(softPotADC < noteResists[6]){
+    bend = (((softPotADC) / noteResists[6]) * mod) + bendDefault;
+  }else{
+    bend = (((softPotADC) / noteResists[7]) * mod) + bendDefault;
+  }
+  return(bend);
+}
+
