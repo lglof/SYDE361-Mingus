@@ -32,30 +32,27 @@ void setup()
 
 void loop() 
 {
+  currtouched = capa.touched();
   // Read in the soft pot's ADC value
   int softPotADC = analogRead(SOFT_POT_PIN);
   // Map the 0-1023 value to 58-50
   int softPotPosition = map(softPotADC, 0, 1023, 58, 50);
-  currtouched = capa.touched();
-
+  
   if ((currtouched & _BV(4))){
+    
     if(lastSoftPotPosition != softPotPosition){
       usbMIDI.sendNoteOn(softPotPosition, NOTE_ON_VEL, MIDI_CHANNEL);
       usbMIDI.sendNoteOff(lastSoftPotPosition, NOTE_OFF_VEL, MIDI_CHANNEL);
-      Serial.print(softPotPosition);
-      Serial.println(" on");
-      Serial.print(lastSoftPotPosition);
-      Serial.println(" off");
-    } 
-  }
+    }
+    lastSoftPotPosition = softPotPosition;
+  } 
   
   if (!(currtouched & _BV(4))){
     usbMIDI.sendNoteOff(lastSoftPotPosition, NOTE_OFF_VEL, MIDI_CHANNEL);
     usbMIDI.sendNoteOff(softPotPosition, NOTE_OFF_VEL, MIDI_CHANNEL);
+    lastSoftPotPosition = 0;
   }
-
-  lastPosition = softPotPosition;
+  
+  
   lasttouched = currtouched;
-  lastSoftPotPosition = softPotPosition;
-
 }
